@@ -1,0 +1,64 @@
+package bank
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+
+public class WeatherApiClient {
+
+    // Replace with your OpenWeatherMap API key
+    private static final String API_KEY = "your_api_key"; 
+    private static final String CITY = "London";
+    private static final String BASE_URL = "https://openweathermap.org/";
+
+    public static void main(String[] args) {
+        try {
+            String urlString = BASE_URL + "?q=" + CITY + "&appid=" + API_KEY + "&units=metric";
+            URL url = new URL(urlString);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+
+            conn.setRequestMethod("GET");
+
+            int responseCode = conn.getResponseCode();
+            if (responseCode == 200) {
+                BufferedReader in = new BufferedReader(
+                        new InputStreamReader(conn.getInputStream()));
+                StringBuilder responseContent = new StringBuilder();
+                String line;
+
+                while ((line = in.readLine()) != null) {
+                    responseContent.append(line);
+                }
+                in.close();
+
+                // Manually parse key values
+                String response = responseContent.toString();
+
+                String name = extractValue(response, "\"name\":\"", "\"");
+                String temp = extractValue(response, "\"temp\":", ",");
+                String humidity = extractValue(response, "\"humidity\":", "}");
+                String description = extractValue(response, "\"description\":\"", "\"");
+
+                System.out.println("City: " + name);
+                System.out.println("Temperature: " + temp + " °C");
+                System.out.println("Humidity: " + humidity + " %");
+                System.out.println("Weather: " + description);
+            } else {
+                System.out.println("Error: HTTP response code " + responseCode);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Simple value extractor (not a full JSON parser)
+    private static String extractValue(String json, String keyStart, String keyEnd) {
+        int start = json.indexOf(keyStart);
+        if (start == -1) return "N/A";
+        start += keyStart.length();
+        int end = json.indexOf(keyEnd, start);
+        if (end == -1) return "N/A";
+        return json.substring(start, end);
+    }
+}
